@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spin & User ID</title>
+  <style>
+    :root { --bg:#0b1020; --card:#121a33; --text:#eaf0ff; --muted:#9fb0d0; --line:#22305e; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, #1a2a66 0%, transparent 60%),
+                  radial-gradient(900px 500px at 80% 20%, #3a1a66 0%, transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    .wrap{ width:min(980px,100%); display:grid; gap:16px; grid-template-columns: 1.2fr 1fr; }
+    @media (max-width: 860px){ .wrap{ grid-template-columns: 1fr; } }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:18px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    h1{ margin:0 0 8px; font-size:20px; letter-spacing:.3px; }
+    p{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.4; }
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      outline:none;
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      font-size:14px;
+    }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px; }
+    @media (max-width: 480px){ .row{ grid-template-columns: 1fr; } }
+    button{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(125,189,255,.9), rgba(62,128,255,.85));
+      color:#08102a;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .08s ease, filter .2s ease;
+      user-select:none;
+    }
+    button:active{ transform: translateY(1px); filter:brightness(.95); }
+    button.secondary{
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+    }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* Wheel */
+    .wheelArea{ display:grid; gap:12px; justify-items:center; }
+    .wheelWrap{
+      position:relative;
+      width:320px; height:320px;
+      display:grid; place-items:center;
+    }
+    .pointer{
+      position:absolute;
+      top:-6px; left:50%;
+      transform: translateX(-50%);
+      width:0; height:0;
+      border-left:14px solid transparent;
+      border-right:14px solid transparent;
+      border-bottom:22px solid rgba(255,255,255,.92);
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+      z-index:2;
+    }
+    .wheel{
+      width:320px; height:320px;
+      border-radius:50%;
+      border:10px solid rgba(255,255,255,.16);
+      background:
+        conic-gradient(
+          #ffd56a 0deg 45deg,
+          #7bd7ff 45deg 90deg,
+          #c3ff85 90deg 135deg,
+          #ff7bb8 135deg 180deg,
+          #b68cff 180deg 225deg,
+          #7bffcf 225deg 270deg,
+          #ff9a7b 270deg 315deg,
+          #7b9dff 315deg 360deg
+        );
+      box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+      transform: rotate(0deg);
+      transition: transform 4.2s cubic-bezier(.12,.82,.12,1);
+    }
+    .hub{
+      position:absolute;
+      width:92px; height:92px;
+      border-radius:50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.9), rgba(255,255,255,.15));
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow: inset 0 0 14px rgba(0,0,0,.35);
+      display:grid; place-items:center;
+      color:#0a1030;
+      font-weight:800;
+      letter-spacing:.4px;
+    }
+    .labels{
+      position:absolute; inset:0;
+      display:grid; place-items:center;
+      pointer-events:none;
+    }
+    .label{
+      position:absolute;
+      top:50%; left:50%;
+      transform-origin: 0 0;
+      font-size:12px;
+      font-weight:800;
+      color: rgba(0,0,0,.72);
+      text-shadow: 0 1px 0 rgba(255,255,255,.25);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.35);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(4px);
+    }
+
+    .result{
+      width:100%;
+      border-top:1px solid rgba(255,255,255,.10);
+      padding-top:12px;
+      display:grid; gap:8px;
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      font-size:13px;
+      color:var(--text);
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background: rgba(255,255,255,.85); }
+    .small{ color:var(--muted); font-size:12px; }
+    .log{
+      margin:0; padding-left:18px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      max-height:170px;
+      overflow:auto;
+    }
+    .footerNote{ margin-top:10px; font-size:11px; color:rgba(255,255,255,.55); }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- LEFT: Wheel -->
+    <section class="card wheelArea">
+      <div style="width:100%">
+        <h1>Spin Wheel</h1>
+        <p>Masukkan <b>User ID</b>, lalu tekan <b>SPIN</b> untuk mendapatkan hasil.</p>
+      </div>
+
+      <div class="wheelWrap" aria-label="Wheel">
+        <div class="pointer" aria-hidden="true"></div>
+
+        <div id="wheel" class="wheel">
+          <div class="labels" id="labels"></div>
+          <div class="hub">SPIN</div>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="badge">
+          <span class="dot"></span>
+          <span><b>User ID:</b> <span id="uidText" class="small">-</span></span>
+        </div>
+        <div class="badge">
+          <span class="dot"></span>
+          <span><b>Hasil:</b> <span id="resultText" class="small">Belum spin</span></span>
+        </div>
+        <div class="badge">
+          <span class="dot"></span>
+          <span><b>Waktu:</b> <span id="timeText" class="small">-</span></span>
+        </div>
+
+        <div>
+          <div class="small" style="margin:10px 0 6px">Riwayat:</div>
+          <ol id="history" class="log"></ol>
+        </div>
+
+        <div class="footerNote">
+          Catatan: ini demo UI “spin” (tanpa deposit/uang). Kamu bisa ganti item & peluangnya di kode JS.
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Controls -->
+    <aside class="card">
+      <h1>Input</h1>
+      <p>Isi User ID kamu. Contoh: <b>USR12345</b></p>
+
+      <label for="userId">User ID</label>
+      <input id="userId" type="text" placeholder="Masukkan User ID..." autocomplete="off" />
+
+      <div class="row">
+        <button id="spinBtn">SPIN</button>
+        <button id="resetBtn" class="secondary" type="button">RESET</button>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="small" style="margin-bottom:6px">Pengaturan cepat</div>
+        <div class="badge">
+          <span class="dot"></span>
+          <span class="small">Cooldown: <b>10 detik</b> (bisa diubah)</span>
+        </div>
+        <div class="badge">
+          <span class="dot"></span>
+          <span class="small">Animasi: <b>4.2 detik</b> (sinkron dengan CSS)</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // === KONFIGURASI ITEM SPIN ===
+    // Kamu bisa ganti isi label (misal: "Voucher 10K", "Bonus", "Hadiah", dll).
+    const prizes = [
+      { label: "Hadiah A" },
+      { label: "Hadiah B" },
+      { label: "Hadiah C" },
+      { label: "Hadiah D" },
+      { label: "Hadiah E" },
+      { label: "Hadiah F" },
+      { label: "Hadiah G" },
+      { label: "Hadiah H" },
+    ];
+
+    // === SETTINGS ===
+    const SPIN_DURATION_MS = 4200; // harus sama feel-nya dengan CSS transition (4.2s)
+    const COOLDOWN_MS = 10000;     // 10 detik
+    const EXTRA_TURNS = 6;         // putaran ekstra biar dramatis
+
+    // === ELEMENTS ===
+    const wheel = document.getElementById("wheel");
+    const labels = document.getElementById("labels");
+    const spinBtn = document.getElementById("spinBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const userIdInput = document.getElementById("userId");
+
+    const uidText = document.getElementById("uidText");
+    const resultText = document.getElementById("resultText");
+    const timeText = document.getElementById("timeText");
+    const historyEl = document.getElementById("history");
+
+    // === STATE ===
+    let spinning = false;
+    let lastSpinAt = 0;
+    let currentRotation = 0;
+
+    // Render label di roda
+    function renderLabels() {
+      labels.innerHTML = "";
+      const n = prizes.length;
+      const step = 360 / n;
+
+      for (let i = 0; i < n; i++) {
+        const el = document.createElement("div");
+        el.className = "label";
+        // tempatkan label agak dekat pinggir
+        // trik: geser dari tengah ke luar dengan translate
+        const angle = i * step + step / 2;
+        el.style.transform = `rotate(${angle}deg) translate(0, -135px) rotate(${90}deg)`;
+        el.textContent = prizes[i].label;
+        labels.appendChild(el);
+      }
+    }
+
+    function nowTimeText() {
+      const d = new Date();
+      // format ringkas
+      const pad = (x) => String(x).padStart(2, "0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    // Pilih index pemenang (random merata).
+    // Kalau mau "peluang", nanti bisa dibuat weighted.
+    function pickPrizeIndex() {
+      return Math.floor(Math.random() * prizes.length);
+    }
+
+    // Hitung rotasi target agar pointer (atas) berhenti di segmen pemenang.
+    function rotationForIndex(index) {
+      const n = prizes.length;
+      const step = 360 / n;
+
+      // Pointer ada di 0 derajat (atas).
+      // Kita ingin segmen index tepat di bawah pointer.
+      // Karena roda berputar searah jarum jam, gunakan offset:
+      // targetAngle = 360 - (index * step + step/2)
+      const centerAngle = index * step + step / 2;
+      const targetAngle = 360 - centerAngle;
+
+      // Tambah putaran ekstra + targetAngle
+      return EXTRA_TURNS * 360 + targetAngle;
+    }
+
+    function addHistory(line) {
+      const li = document.createElement("li");
+      li.textContent = line;
+      historyEl.prepend(li);
+    }
+
+    function setDisabled(disabled) {
+      spinBtn.disabled = disabled;
+      userIdInput.disabled = disabled;
+    }
+
+    function doReset() {
+      spinning = false;
+      lastSpinAt = 0;
+      currentRotation = 0;
+      wheel.style.transition = "none";
+      wheel.style.transform = `rotate(0deg)`;
+      // force reflow supaya transition kembali normal
+      void wheel.offsetWidth;
+      wheel.style.transition = "";
+      uidText.textContent = "-";
+      resultText.textContent = "Belum spin";
+      timeText.textContent = "-";
+      historyEl.innerHTML = "";
+      userIdInput.value = "";
+      setDisabled(false);
+    }
+
+    async function doSpin() {
+      const uid = userIdInput.value.trim();
+
+      if (!uid) {
+        alert("User ID wajib diisi dulu ya 🙂");
+        userIdInput.focus();
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastSpinAt < COOLDOWN_MS) {
+        const sisa = Math.ceil((COOLDOWN_MS - (now - lastSpinAt)) / 1000);
+        alert(`Tunggu ${sisa} detik sebelum spin lagi.`);
+        return;
+      }
+
+      if (spinning) return;
+
+      spinning = true;
+      lastSpinAt = now;
+      setDisabled(true);
+
+      uidText.textContent = uid;
+      resultText.textContent = "Sedang spin...";
+      timeText.textContent = nowTimeText();
+
+      const winnerIndex = pickPrizeIndex();
+      const targetRotation = rotationForIndex(winnerIndex);
+
+      // Biar selalu lanjut muter dari posisi sekarang
+      currentRotation = currentRotation + targetRotation;
+
+      // Apply rotation
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+      // tunggu selesai animasi
+      await new Promise((r) => setTimeout(r, SPIN_DURATION_MS));
+
+      const winner = prizes[winnerIndex].label;
+      resultText.textContent = winner;
+      timeText.textContent = nowTimeText();
+      addHistory(`[${nowTimeText()}] ${uid} → ${winner}`);
+
+      spinning = false;
+      setDisabled(false);
+    }
+
+    // init
+    renderLabels();
+    spinBtn.addEventListener("click", doSpin);
+    resetBtn.addEventListener("click", doReset);
+
+    // Enter untuk spin
+    userIdInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSpin();
+    });
+  </script>
+</body>
+</html>
